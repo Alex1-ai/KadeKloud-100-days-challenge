@@ -1,0 +1,9 @@
+aws ec2 create-key-pair \
+  --key-name xfusion \
+  --key-type rsa \
+  --key-format pem \
+  --query 'KeyMaterial' \
+  --output text > xfusion.pem
+
+
+chmod 400 xfusion.pem

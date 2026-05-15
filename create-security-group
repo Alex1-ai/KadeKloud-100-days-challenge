@@ -1,0 +1,31 @@
+aws ec2 describe-vpcs \
+  --filters "Name=isDefault,Values=true" \
+  --query 'Vpcs[0].VpcId' \
+  --output text
+
+aws ec2 create-security-group \
+  --group-name xfusion-sg \
+  --description "Security group for Nautilus App Servers" \
+  --vpc-id <YOUR_VPC_ID>
+
+
+aws ec2 authorize-security-group-ingress \
+  --group-id <YOUR_SG_ID> \
+  --protocol tcp \
+  --port 80 \
+  --cidr 0.0.0.0/0
+
+
+aws ec2 authorize-security-group-ingress \
+  --group-id <YOUR_SG_ID> \
+  --protocol tcp \
+  --port 22 \
+  --cidr 0.0.0.0/0
+
+
+aws ec2 describe-security-groups \
+  --group-ids <YOUR_SG_ID> \
+  --query 'SecurityGroups[0].{Name:GroupName,Description:Description,Inbound:IpPermissions}' \
+  --output table
+vpc = vpc-065bbfb15995378ac
+security-group = sg-0451a0983c529533b
