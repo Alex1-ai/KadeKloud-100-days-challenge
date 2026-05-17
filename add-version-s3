@@ -1,0 +1,9 @@
+aws s3api put-bucket-versioning \
+  --bucket datacenter-s3-7495 \
+  --versioning-configuration Status=Enabled \
+  --region us-east-1
+
+
+aws s3api get-bucket-versioning \
+  --bucket datacenter-s3-7495 \
+  --region us-east-1
