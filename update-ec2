@@ -1,0 +1,42 @@
+1. Check current status
+
+aws ec2 describe-instances \
+--filters "Name=tag:Name,Values=datacenter-ec2" \
+--query "Reservations[*].Instances[*].InstanceId" \
+--output text
+
+aws ec2 describe-instance-status \
+--instance-ids <INSTANCE_ID>
+
+2.Get instance ID
+
+aws ec2 describe-instances \
+--filters "Name=tag:Name,Values=datacenter-ec2" \
+--query "Reservations[*].Instances[*].InstanceId" \
+--output text
+
+
+3 Stop the instance
+
+aws ec2 stop-instances --instance-ids <INSTANCE_ID>
+
+aws ec2 wait instance-stopped --instance-ids <INSTANCE_ID>
+
+
+4. Change instance type to t2.nano
+
+aws ec2 modify-instance-attribute \
+--instance-id <INSTANCE_ID> \
+--instance-type "{\"Value\": \"t2.nano\"}"
+
+
+5. state instance
+aws ec2 start-instances --instance-ids <INSTANCE_ID>
+aws ec2 wait instance-running --instance-ids <INSTANCE_ID>
+
+6.  verify
+
+aws ec2 describe-instances \
+--instance-ids <INSTANCE_ID> \
+--query "Reservations[*].Instances[*].[InstanceType,State.Name]" \
+--output table

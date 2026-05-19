@@ -1,0 +1,49 @@
+1. Find the latest Amazon Linux 2 AMI
+AMI_ID=$(aws ec2 describe-images \
+  --owners amazon \
+  --filters \
+    "Name=name,Values=amzn2-ami-hvm-*-x86_64-gp2" \
+    "Name=state,Values=available" \
+  --query "sort_by(Images, &CreationDate)[-1].ImageId" \
+  --output text)
+echo "AMI: $AMI_ID"
+-> AMI: ami-0d5e7e27578d32e47
+
+2. Create the RSA key pair
+aws ec2 create-key-pair \
+  --key-name nautilus-kp \
+  --key-type rsa \
+  --query "KeyMaterial" \
+  --output text > nautilus-kp.pem
+
+chmod 400 nautilus-kp.pem
+echo "Key pair created and saved to nautilus-kp.pem"
+
+
+3. Get the default security group ID
+
+SG_ID=$(aws ec2 describe-security-groups \
+  --filters "Name=group-name,Values=default" \
+  --query "SecurityGroups[0].GroupId" \
+  --output text)
+echo "Security Group: $SG_ID"
+Security Group: sg-008e123d680516d66
+
+Step 4 — Launch the EC2 instance
+INSTANCE_ID=$(aws ec2 run-instances \
+  --image-id "$AMI_ID" \
+  --instance-type t2.micro \
+  --key-name nautilus-kp \
+  --security-group-ids "$SG_ID" \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=nautilus-ec2}]' \
+  --query "Instances[0].InstanceId" \
+  --output text)
+echo "Instance launched: $INSTANCE_ID"
+
+
+Step 5 — Verify it's running
+aws ec2 describe-instances \
+  --instance-ids "$INSTANCE_ID" \
+  --query "Reservations[0].Instances[0].{Name:Tags[?Key=='Name']|[0].Value, State:State.Name, Type:InstanceType, KeyPair:KeyName, SG:SecurityGroups[0].GroupName}" \
+  --output table
+
