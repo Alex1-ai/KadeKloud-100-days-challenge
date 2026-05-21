@@ -21,3 +21,6 @@ aws ec2 describe-instance-attribute \
   --region us-east-1 \
   --instance-id <INSTANCE_ID> \
   --attribute disableApiTermination
+
+
+
