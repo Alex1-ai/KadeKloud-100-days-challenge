@@ -1,0 +1,23 @@
+1.  Get the instance ID
+
+aws ec2 describe-instances \
+  --region us-east-1 \
+  --filters "Name=tag:Name,Values=xfusion-ec2" \
+  --query "Reservations[*].Instances[*].InstanceId" \
+  --output text
+
+
+2. Step 2 — Enable termination protection:
+
+
+aws ec2 modify-instance-attribute \
+  --region us-east-1 \
+  --instance-id <INSTANCE_ID> \
+  --disable-api-termination
+
+3. Step 3 — Verify it's enabled:
+
+aws ec2 describe-instance-attribute \
+  --region us-east-1 \
+  --instance-id <INSTANCE_ID> \
+  --attribute disableApiTermination
