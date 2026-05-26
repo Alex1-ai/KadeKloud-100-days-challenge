@@ -1,0 +1,32 @@
+aws ec2 describe-instances \
+  --region us-east-1 \
+  --filters "Name=tag:Name,Values=nautilus-ec2" \
+  --query "Reservations[*].Instances[*].[InstanceId]" \
+  --output text i-0ec500caf5989b9ff
+
+aws ec2 describe-addresses \
+  --region us-east-1 \
+  --filters "Name=tag:Name,Values=nautilus-ec2-eip" \
+  --query "Addresses[*].AllocationId" \
+  --output text
+if return empty list, then;
+
+aws ec2 allocate-address \
+  --region us-east-1 \
+  --domain vpc eipalloc-040a3ec0dfedaa2d6
+
+aws ec2 create-tags \
+  --region us-east-1 \
+  --resources eipalloc-040a3ec0dfedaa2d6 \
+  --tags Key=Name,Value=nautilus-ec2-eip
+
+
+aws ec2 associate-address \
+  --instance-id i-0ec500caf5989b9ff \
+  --allocation-id eipalloc-040a3ec0dfedaa2d6\
+  --region us-east-1
+
+
+aws ec2 describe-addresses \
+  --region us-east-1 \
+  --output table
