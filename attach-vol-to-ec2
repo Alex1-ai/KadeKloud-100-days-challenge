@@ -1,0 +1,22 @@
+aws ec2 describe-instances \
+  --region us-east-1 \
+  --filters "Name=tag:Name,Values=nautilus-ec2" \
+  --query "Reservations[0].Instances[0].InstanceId" \
+  --output text
+
+
+
+aws ec2 describe-volumes \
+  --region us-east-1 \
+  --filters "Name=tag:Name,Values=nautilus-volume" \
+  --query "Volumes[0].VolumeId" \
+  --output text
+
+
+
+
+aws ec2 attach-volume \
+  --region us-east-1 \
+  --instance-id <INSTANCE_ID> \
+  --volume-id <VOLUME_ID> \
+  --device /dev/sdb
