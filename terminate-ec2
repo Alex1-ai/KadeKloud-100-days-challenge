@@ -1,0 +1,18 @@
+aws ec2 describe-instances \
+  --region us-east-1 \
+  --filters "Name=tag:Name,Values=xfusion-ec2" \
+  --query "Reservations[*].Instances[*].InstanceId" \
+  --output text
+
+
+
+aws ec2 terminate-instances \
+  --region us-east-1 \
+  --instance-ids i-0f141e0972c130cca
+
+
+aws ec2 describe-instances \
+  --region us-east-1 \
+  --instance-ids i-0123456789abcdef0 \
+  --query "Reservations[*].Instances[*].State.Name" \
+  --output text

@@ -1,0 +1,27 @@
+aws ec2 describe-instances \
+  --filters "Name=tag:Name,Values=xfusion-ec2" \
+  --query 'Reservations[*].Instances[*].[InstanceId,State.Name]' \
+  --output table
+
+
+  aws ec2 describe-instances \
+  --filters "Name=tag:Name,Values=xfusion-ec2" \
+  --query 'Reservations[0].Instances[0].InstanceId' \
+  --output text
+
+
+  aws ec2 create-image \
+  --instance-id $INSTANCE_ID \
+  --name "xfusion-ec2-ami" \
+  --no-reboot \
+  --query 'ImageId' \
+  --output text
+
+
+  aws ec2 wait image-available --image-ids $AMI_ID
+
+
+  aws ec2 describe-images \
+  --image-ids ami-0409f1fbf31ad0c24 \
+  --query 'Images[*].[Name,State,ImageId]' \
+  --output table
