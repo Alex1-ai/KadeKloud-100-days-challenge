@@ -1,0 +1,8 @@
+aws iam create-user \
+  --user-name iamuser_jim
+
+aws iam get-user \
+  --user-name iamuser_jim
+
+
+aws iam list-users
