@@ -1,0 +1,5 @@
+aws iam create-group --group-name iamgroup_siva
+
+
+
+aws iam list-groups | grep iamgroup_siva
