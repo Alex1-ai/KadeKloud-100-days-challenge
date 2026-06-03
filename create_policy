@@ -1,0 +1,27 @@
+cat > /tmp/iampolicy_john.json << 'EOF'
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "EC2ReadOnly",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:Describe*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+EOF
+
+
+aws iam create-policy \
+  --policy-name iampolicy_john \
+  --policy-document file:///tmp/iampolicy_john.json
+
+
+aws iam list-policies \
+  --scope Local \
+  --query "Policies[?PolicyName=='iampolicy_john']"
+
+"Action": ["ec2:Describe*"]
