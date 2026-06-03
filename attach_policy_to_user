@@ -1,0 +1,12 @@
+aws iam list-policies \
+  --query "Policies[?PolicyName=='iampolicy_james'].Arn" \
+  --output text
+
+
+aws iam attach-user-policy \
+  --user-name iamuser_james \
+  --policy-arn <POLICY_ARN>
+
+
+aws iam list-attached-user-policies \
+  --user-name iamuser_james
