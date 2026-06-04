@@ -1,0 +1,28 @@
+cat > trust-policy.json <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+
+aws iam create-role \
+  --role-name iamrole_javed \
+  --assume-role-policy-document file://trust-policy.json
+
+
+aws iam list-policies \
+  --query "Policies[?PolicyName=='iampolicy_javed'].Arn" \
+  --output text
+
+
+aws iam attach-role-policy \
+  --role-name iamrole_javed \
+  --policy-arn arn:aws:iam::983375543249:policy/iampolicy_javed
