@@ -26,5 +26,12 @@ aws ec2 describe-instances \
   --query 'Reservations[*].Instances[*].State.Name' \
   --output text
 
+sg-001f92f8a786fca2b
 
+
+aws ec2 authorize-security-group-ingress \
+  --group-id sg-001f92f8a786fca2b \
+  --protocol tcp \
+  --port 22 \
+  --cidr 0.0.0.0/0
 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC9AmMYtWL0uuc9lF8UFGCnGAp2yL/w8ucpIuraHZ2M7gXHUOxZNUtlFk6/8QqcQIwMSSCKTi2HvqAnN5EJoaLVFoIboBGSrfbcAefN0j01UDHLLTHiWJKLtDmXFAjn1mven26t+O8y8SdDLJ6Eq3KtF06d4NPdH3P73aYcUQ7QNnGZLXrxpneBo6NiSubGQQQgu+vcS/i05rZv//q58+OGfIHN9mittcc17lz2cTAstfL7JLvoUHaqiy2Cvp4YG1ptq/4KPie38LmUaBCAQDlXmb3mMx2ZpVQO+lYNZCpc2QoY6zudAF4mcbUsEDAAAJua0W23uOJqCdZ8jVufdynh root@aws-client
