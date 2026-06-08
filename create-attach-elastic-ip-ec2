@@ -1,0 +1,22 @@
+aws ec2 run-instances \
+  --image-id  ami-0fa1f10d2778ef1d4 \
+  --instance-type t2.micro \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=nautilus-ec2}]'
+
+
+aws ec2 allocate-address --domain vpc
+
+
+aws ec2 create-tags \
+  --resources eipalloc-006cfe8d0c151bb4f \
+  --tags Key=Name,Value=nautilus-eip
+
+
+aws ec2 associate-address \
+  --instance-id i-0e00b14d436e9d09d \
+  --allocation-id eipalloc-0274a8771dd8014da
+
+
+aws ec2 create-tags \
+  --resources eipalloc-0274a8771dd8014da \
+  --tags Key=Name,Value=nautilus-eip

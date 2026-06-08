@@ -1,0 +1,30 @@
+ssh-keygen -t rsa -b 2048 -f /root/.ssh/id_rsa -N ""
+
+
+
+
+
+
+aws ec2 run-instances \
+  --image-id ami-0fa1f10d2778ef1d4 \
+  --instance-type t2.micro \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=nautilus-ec2}]'
+
+i-0011aabe82d005a14
+aws ec2 describe-instances \
+  --filters "Name=tag:Name,Values=nautilus-ec2" \
+  --query 'Reservations[*].Instances[*].PublicIpAddress' \
+  --output text
+
+
+aws ec2 describe-security-groups \
+  --group-ids sg-07b3c9e7fc0e52198
+
+
+aws ec2 describe-instances \
+  --instance-ids i-00dd0727f0296a9bc \
+  --query 'Reservations[*].Instances[*].State.Name' \
+  --output text
+
+
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC9AmMYtWL0uuc9lF8UFGCnGAp2yL/w8ucpIuraHZ2M7gXHUOxZNUtlFk6/8QqcQIwMSSCKTi2HvqAnN5EJoaLVFoIboBGSrfbcAefN0j01UDHLLTHiWJKLtDmXFAjn1mven26t+O8y8SdDLJ6Eq3KtF06d4NPdH3P73aYcUQ7QNnGZLXrxpneBo6NiSubGQQQgu+vcS/i05rZv//q58+OGfIHN9mittcc17lz2cTAstfL7JLvoUHaqiy2Cvp4YG1ptq/4KPie38LmUaBCAQDlXmb3mMx2ZpVQO+lYNZCpc2QoY6zudAF4mcbUsEDAAAJua0W23uOJqCdZ8jVufdynh root@aws-client
