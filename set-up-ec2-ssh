@@ -1,0 +1,92 @@
+# Check if key already exists, if not, create it
+[ -f .ssh/id_rsa ] || ssh-keygen -t rsa -b 2048 -f /root/.ssh/id_rsa -N ""
+
+
+# Import your public key to AWS EC2 as a key pair named "id_rsa"
+aws ec2 import-key-pair \
+  --key-name "id_rsa" \
+  --public-key-material fileb:///root/.ssh/id_rsa.pub \
+  --region us-east-1
+
+
+AMI_ID=$(aws ec2 describe-images \
+  --owners amazon \
+  --filters "Name=name,Values=amzn2-ami-hvm-*-x86_64-gp2" \
+             "Name=state,Values=available" \
+  --query "sort_by(Images, &CreationDate)[-1].ImageId" \
+  --output text \
+  --region us-east-1)
+
+echo "Using AMI: $AMI_ID"
+
+
+
+INSTANCE_ID=$(aws ec2 run-instances \
+  --image-id "$AMI_ID" \
+  --instance-type t2.micro \
+  --key-name "id_rsa" \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=devops-ec2}]' \
+  --region us-east-1 \
+  --query "Instances[0].InstanceId" \
+  --output text)
+
+echo "Launched Instance ID: $INSTANCE_ID"
+
+
+
+echo "Waiting for instance to enter 'running' state..."
+aws ec2 wait instance-running \
+  --instance-ids "$INSTANCE_ID" \
+  --region us-east-1
+
+echo "Instance is running!"
+
+
+
+PUBLIC_IP=$(aws ec2 describe-instances \
+  --instance-ids "$INSTANCE_ID" \
+  --query "Reservations[0].Instances[0].PublicIpAddress" \
+  --output text \
+  --region us-east-1)
+
+echo "Public IP: $PUBLIC_IP"
+
+
+PUBLIC_IP=$(aws ec2 describe-instances \
+  --instance-ids "$INSTANCE_ID" \
+  --query "Reservations[0].Instances[0].PublicIpAddress" \
+  --output text \
+  --region us-east-1)
+
+
+# Get the default security group ID
+SG_ID=$(aws ec2 describe-security-groups \
+  --filters "Name=group-name,Values=default" \
+  --query "SecurityGroups[0].GroupId" \
+  --output text \
+  --region us-east-1)
+
+echo "Security Group ID: $SG_ID"
+
+# Add inbound SSH rule
+aws ec2 authorize-security-group-ingress \
+  --group-id "$SG_ID" \
+  --protocol tcp \
+  --port 22 \
+  --cidr 0.0.0.0/0 \
+  --region us-east-1
+
+echo "Public IP: $PUBLIC_IP"
+
+
+ssh -i /root/.ssh/id_rsa -o StrictHostKeyChecking=no ec2-user@$PUBLIC_IP
+ssh -i /root/.ssh/id_rsa -o StrictHostKeyChecking=no root@$PUBLIC_IP
+ssh -i /root/.ssh/id_rsa -o StrictHostKeyChecking=no ec2-user@$PUBLIC_IP "
+  sudo mkdir -p /root/.ssh && \
+  sudo cp /home/ec2-user/.ssh/authorized_keys /root/.ssh/authorized_keys && \
+  sudo chmod 600 /root/.ssh/authorized_keys && \
+  sudo chmod 700 /root/.ssh
+"
+
+
+ssh -i .ssh/id_rsa -o StrictHostKeyChecking=no root@$PUBLIC_IP "whoami"
