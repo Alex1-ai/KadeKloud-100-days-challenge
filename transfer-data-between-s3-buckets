@@ -1,0 +1,23 @@
+aws s3api create-bucket \
+    --bucket nautilus-sync-4349
+
+
+
+aws s3api create-bucket \
+    --bucket datacenter-sync-21068 \
+    --create-bucket-configuration LocationConstraint=$(aws configure get region)
+
+aws s3 ls
+
+
+aws s3 sync s3://nautilus-s3-2584 s3://nautilus-sync-4349
+
+
+aws s3 ls s3://nautilus-s3-2584 --recursive | wc -l
+
+
+aws s3 ls s3://nautilus-sync-4349 --recursive | wc -l
+
+
+
+aws s3 sync s3://nautilus-s3-2584 s3://nautilus-sync-4349 --dryrun
