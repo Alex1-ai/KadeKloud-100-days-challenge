@@ -1,0 +1,79 @@
+# VPC of the instance
+INSTANCE_ID=$(aws ec2 describe-instances \
+  --filters "Name=tag:Name,Values=devops-ec2" \
+  --query "Reservations[].Instances[].InstanceId" \
+  --output text)
+
+VPC_ID=$(aws ec2 describe-instances \
+  --instance-ids $INSTANCE_ID \
+  --query "Reservations[0].Instances[0].VpcId" \
+  --output text)
+
+# Subnets for the ALB (must be in different AZs)
+SUBNETS=$(aws ec2 describe-subnets \
+  --filters "Name=vpc-id,Values=$VPC_ID" \
+  --query "Subnets[*].SubnetId" \
+  --output text)
+
+
+SG_ID=$(aws ec2 create-security-group \
+  --group-name devops-sg \
+  --description "ALB security group" \
+  --vpc-id $VPC_ID \
+  --query GroupId \
+  --output text)
+
+
+EC2_SG=$(aws ec2 describe-instances \
+  --instance-ids $INSTANCE_ID \
+  --query "Reservations[0].Instances[0].SecurityGroups[0].GroupId" \
+  --output text)
+
+aws ec2 authorize-security-group-ingress \
+  --group-id $EC2_SG \
+  --protocol tcp \
+  --port 80 \
+  --source-group $SG_ID
+
+TG_ARN=$(aws elbv2 create-target-group \
+  --name devops-tg \
+  --protocol HTTP \
+  --port 80 \
+  --target-type instance \
+  --vpc-id $VPC_ID \
+  --query 'TargetGroups[0].TargetGroupArn' \
+  --output text)
+
+aws elbv2 register-targets \
+  --target-group-arn $TG_ARN \
+  --targets Id=$INSTANCE_ID,Port=80
+
+
+SUBNET1=$(echo $SUBNETS | awk '{print $1}')
+SUBNET2=$(echo $SUBNETS | awk '{print $2}')
+
+ALB_ARN=$(aws elbv2 create-load-balancer \
+  --name nautilus-alb \
+  --subnets $SUBNET1 $SUBNET2 \
+  --security-groups $SG_ID \
+  --scheme internet-facing \
+  --type application \
+  --query 'LoadBalancers[0].LoadBalancerArn' \
+  --output text)
+
+
+aws elbv2 create-listener \
+  --load-balancer-arn $ALB_ARN \
+  --protocol HTTP \
+  --port 80 \
+  --default-actions Type=forward,TargetGroupArn=$TG_ARN
+
+
+aws elbv2 describe-target-health \
+  --target-group-arn $TG_ARN
+
+
+aws elbv2 describe-load-balancers \
+  --names nautilus-alb \
+  --query 'LoadBalancers[0].DNSName' \
+  --output text
