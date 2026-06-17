@@ -1,0 +1,42 @@
+aws ec2 describe-images \
+  --owners 099720109477 \
+  --filters "Name=name,Values=ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*" \
+  --query 'Images | sort_by(@,&CreationDate)[-1].ImageId' \
+  --output text
+
+
+
+ami-0f8a61b66d1accaee
+
+
+INSTANCE_ID=$(aws ec2 run-instances \
+  --image-id ami-0f8a61b66d1accaee \
+  --instance-type t2.micro \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=xfusion-ec2}]' \
+  --query 'Instances[0].InstanceId' \
+  --output text)
+
+echo $INSTANCE_ID
+
+
+TOPIC_ARN=$(aws sns list-topics \
+  --query "Topics[?contains(TopicArn, 'xfusion-sns-topic')].TopicArn | [0]" \
+  --output text)
+
+echo $TOPIC_ARN
+
+
+aws cloudwatch put-metric-alarm \
+  --alarm-name xfusion-alarm \
+  --metric-name CPUUtilization \
+  --namespace AWS/EC2 \
+  --statistic Average \
+  --period 300 \
+  --threshold 90 \
+  --comparison-operator GreaterThanOrEqualToThreshold \
+  --evaluation-periods 1 \
+  --dimensions Name=InstanceId,Value=$INSTANCE_ID \
+  --alarm-actions $TOPIC_ARN
+
+  aws cloudwatch describe-alarms \
+  --alarm-names xfusion-alarm
