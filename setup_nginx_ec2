@@ -1,0 +1,49 @@
+aws ec2 describe-images \
+  --owners 099720109477 \
+  --filters "Name=name,Values=ubuntu/images/hvm-ssd/ubuntu-*-amd64-server-*" \
+  --query 'Images | sort_by(@,&CreationDate)[-1].ImageId' \
+  --output text
+
+ami-0d7405d05f836d0d4
+VPC_ID=$(aws ec2 describe-vpcs \
+  --filters Name=isDefault,Values=true \
+  --query 'Vpcs[0].VpcId' \
+  --output text)
+
+
+SG_ID=$(aws ec2 create-security-group \
+  --group-name datacenter-web-sg \
+  --description "Allow HTTP access" \
+  --vpc-id $VPC_ID \
+  --query 'GroupId' \
+  --output text)
+
+
+aws ec2 authorize-security-group-ingress \
+  --group-id $SG_ID \
+  --protocol tcp \
+  --port 80 \
+  --cidr 0.0.0.0/0
+
+
+cat > userdata.sh <<'EOF'
+#!/bin/bash
+apt-get update -y
+apt-get install -y nginx
+systemctl enable nginx
+systemctl start nginx
+EOF
+
+
+aws ec2 run-instances \
+  --image-id ami-0d7405d05f836d0d4 \
+  --instance-type t2.micro \
+  --security-group-ids $SG_ID \
+  --user-data file://userdata.sh \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=datacenter-ec2}]'
+
+
+aws ec2 describe-instances \
+  --filters "Name=tag:Name,Values=datacenter-ec2" \
+  --query 'Reservations[*].Instances[*].[InstanceId,State.Name,PublicIpAddress]' \
+  --output table
