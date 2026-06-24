@@ -1,0 +1,83 @@
+aws ec2 describe-vpcs \
+  --filters "Name=isDefault,Values=true" \
+  --query "Vpcs[*].[VpcId,CidrBlock]" \
+  --output table
+
+
+aws ec2 describe-vpcs \
+  --filters "Name=tag:Name,Values=xfusion-private-vpc" \
+  --query "Vpcs[*].[VpcId,CidrBlock]" \
+  --output table
+
+
+aws ec2 create-vpc-peering-connection \
+  --vpc-id <DEFAULT_VPC_ID> \
+  --peer-vpc-id <PRIVATE_VPC_ID> \
+  --tag-specifications 'ResourceType=vpc-peering-connection,Tags=[{Key=Name,Value=xfusion-vpc-peering}]'
+
+
+aws ec2 accept-vpc-peering-connection \
+  --vpc-peering-connection-id pcx-xxxxxxxx
+
+
+aws ec2 describe-vpc-peering-connections \
+  --vpc-peering-connection-ids pcx-xxxxxxxx
+
+
+aws ec2 describe-route-tables \
+  --filters "Name=vpc-id,Values=<DEFAULT_VPC_ID>"
+
+aws ec2 create-route \
+  --route-table-id <DEFAULT_RT_ID> \
+  --destination-cidr-block 10.1.0.0/16 \
+  --vpc-peering-connection-id pcx-xxxxxxxx
+
+aws ec2 describe-route-tables \
+  --filters "Name=vpc-id,Values=<PRIVATE_VPC_ID>"
+
+aws ec2 create-route \
+  --route-table-id <PRIVATE_RT_ID> \
+  --destination-cidr-block <DEFAULT_VPC_CIDR> \
+  --vpc-peering-connection-id pcx-xxxxxxxx
+
+aws ec2 describe-instances \
+  --filters "Name=tag:Name,Values=xfusion-private-ec2"
+
+aws ec2 authorize-security-group-ingress \
+  --group-id <PRIVATE_SG_ID> \
+  --protocol icmp \
+  --port -1 \
+  --cidr <DEFAULT_VPC_CIDR>
+
+aws ec2 authorize-security-group-ingress \
+  --group-id <PRIVATE_SG_ID> \
+  --protocol tcp \
+  --port 22 \
+  --cidr <DEFAULT_VPC_CIDR>
+
+cat /root/.ssh/id_rsa.pub
+
+aws ec2 describe-instances \
+  --filters "Name=tag:Name,Values=xfusion-public-ec2" \
+  --query "Reservations[*].Instances[*].PublicIpAddress" \
+  --output text
+
+ssh ec2-user@<PUBLIC_IP>
+
+mkdir -p ~/.ssh
+chmod 700 ~/.ssh
+
+echo "PASTE_PUBLIC_KEY_HERE" >> ~/.ssh/authorized_keys
+
+chmod 600 ~/.ssh/authorized_keys
+
+
+aws ec2 describe-instances \
+  --filters "Name=tag:Name,Values=xfusion-private-ec2" \
+  --query "Reservations[*].Instances[*].PrivateIpAddress" \
+  --output text
+
+
+ssh ec2-user@<PUBLIC_EC2_PUBLIC_IP>
+
+

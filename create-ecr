@@ -1,0 +1,24 @@
+aws ecr create-repository --repository-name xfusion-ecr
+
+REPO_URI=$(aws ecr describe-repositories \
+  --repository-names xfusion-ecr \
+  --query 'repositories[0].repositoryUri' \
+  --output text)
+
+echo $REPO_URI
+
+
+aws ecr get-login-password --region $AWS_DEFAULT_REGION | \
+docker login --username AWS --password-stdin $(echo $REPO_URI | cut -d/ -f1)
+
+
+cd /root/pyapp
+docker build -t xfusion-ecr:latest .
+
+docker tag xfusion-ecr:latest ${REPO_URI}:latest
+
+
+docker push ${REPO_URI}:latest
+
+
+aws ecr list-images --repository-name xfusion-ecr
