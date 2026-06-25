@@ -1,0 +1,137 @@
+DEFAULT_VPC=$(aws ec2 describe-vpcs \
+  --filters Name=isDefault,Values=true \
+  --query 'Vpcs[0].VpcId' \
+  --output text)
+
+echo $DEFAULT_VPC
+
+PRIVATE_VPC=$(aws ec2 describe-vpcs \
+  --filters Name=tag:Name,Values=devops-private-vpc \
+  --query 'Vpcs[0].VpcId' \
+  --output text)
+
+echo $PRIVATE_VPC
+
+
+PEERING_ID=$(aws ec2 create-vpc-peering-connection \
+  --vpc-id $DEFAULT_VPC \
+  --peer-vpc-id $PRIVATE_VPC \
+  --tag-specifications 'ResourceType=vpc-peering-connection,Tags=[{Key=Name,Value=devops-vpc-peering}]' \
+  --query 'VpcPeeringConnection.VpcPeeringConnectionId' \
+  --output text)
+
+echo $PEERING_ID
+
+
+aws ec2 accept-vpc-peering-connection \
+  --vpc-peering-connection-id $PEERING_ID
+
+
+DEFAULT_CIDR=$(aws ec2 describe-vpcs \
+  --vpc-ids $DEFAULT_VPC \
+  --query 'Vpcs[0].CidrBlock' \
+  --output text)
+
+echo $DEFAULT_CIDR
+
+
+PRIVATE_CIDR=$(aws ec2 describe-vpcs \
+  --vpc-ids $PRIVATE_VPC \
+  --query 'Vpcs[0].CidrBlock' \
+  --output text)
+
+echo $PRIVATE_CIDR
+
+
+DEFAULT_RT=$(aws ec2 describe-route-tables \
+  --filters Name=vpc-id,Values=$DEFAULT_VPC \
+  --query 'RouteTables[0].RouteTableId' \
+  --output text)
+
+aws ec2 create-route \
+  --route-table-id $DEFAULT_RT \
+  --destination-cidr-block $PRIVATE_CIDR \
+  --vpc-peering-connection-id $PEERING_ID
+
+
+PRIVATE_RT=$(aws ec2 describe-route-tables \
+  --filters Name=vpc-id,Values=$PRIVATE_VPC \
+  --query 'RouteTables[0].RouteTableId' \
+  --output text)
+
+aws ec2 create-route \
+  --route-table-id $PRIVATE_RT \
+  --destination-cidr-block $DEFAULT_CIDR \
+  --vpc-peering-connection-id $PEERING_ID
+
+
+PUBLIC_INSTANCE=$(aws ec2 describe-instances \
+  --filters Name=tag:Name,Values=devops-public-ec2 \
+  --query 'Reservations[].Instances[].InstanceId' \
+  --output text)
+
+echo $PUBLIC_INSTANCE
+
+
+PUBLIC_IP=$(aws ec2 describe-instances \
+  --instance-ids $PUBLIC_INSTANCE \
+  --query 'Reservations[0].Instances[0].PublicIpAddress' \
+  --output text)
+
+echo $PUBLIC_IP
+
+
+ssh -i /root/.ssh/id_rsa ec2-user@$PUBLIC_IP
+
+
+mkdir -p ~/.ssh
+chmod 700 ~/.ssh
+
+echo "$(cat /root/.ssh/id_rsa.pub)" >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+
+
+PRIVATE_INSTANCE=$(aws ec2 describe-instances \
+  --filters Name=tag:Name,Values=devops-private-ec2 \
+  --query 'Reservations[].Instances[].InstanceId' \
+  --output text)
+
+
+PRIVATE_SG=$(aws ec2 describe-instances \
+  --instance-ids $PRIVATE_INSTANCE \
+  --query 'Reservations[0].Instances[0].SecurityGroups[0].GroupId' \
+  --output text)
+
+echo $PRIVATE_SG
+
+
+aws ec2 authorize-security-group-ingress \
+  --group-id $PRIVATE_SG \
+  --protocol icmp \
+  --port -1 \
+  --cidr $DEFAULT_CIDR
+
+
+aws ec2 authorize-security-group-ingress \
+  --group-id $PRIVATE_SG \
+  --protocol tcp \
+  --port 22 \
+  --cidr $DEFAULT_CIDR
+
+
+PRIVATE_IP=$(aws ec2 describe-instances \
+  --instance-ids $PRIVATE_INSTANCE \
+  --query 'Reservations[0].Instances[0].PrivateIpAddress' \
+  --output text)
+
+echo $PRIVATE_IP
+
+ssh -i /root/.ssh/id_rsa ec2-user@$PUBLIC_IP
+
+
+ping $PRIVATE_IP
+
+
+aws ec2 describe-vpc-peering-connections \
+  --vpc-peering-connection-ids $PEERING_ID \
+  --query 'VpcPeeringConnections[0].Status.Code'
